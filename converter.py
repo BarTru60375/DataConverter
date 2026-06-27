@@ -51,6 +51,19 @@ def write_json(data, path):
 
 WRITERS["json"] = write_json
 
+# Task4: wczytywanie z pliku .yml/.yaml i weryfikacja poprawnosci skladni
+def read_yaml(path):
+    if yaml is None:
+        raise RuntimeError("Brak biblioteki PyYAML. Zainstaluj: pip install pyyaml")
+    with open(path, "r", encoding="utf-8") as f:
+        try:
+            return yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise ValueError("Niepoprawna skladnia YAML w pliku '%s': %s" % (path, e))
+
+
+READERS["yml"] = read_yaml
+READERS["yaml"] = read_yaml
 
 
 
