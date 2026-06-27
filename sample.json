@@ -1,0 +1,14 @@
+{
+    "projekt": "Konwerter danych",
+    "wersja": 1.0,
+    "autor": {
+        "imie": "Jan",
+        "nazwisko": "Kowalski"
+    },
+    "formaty": [
+        "json",
+        "yaml",
+        "xml"
+    ],
+    "aktywny": true
+}
