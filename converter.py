@@ -109,6 +109,30 @@ def read_xml(path):
 
 READERS["xml"] = read_xml
 
+# Task7: zapis danych z obiektu do pliku w formacie .xml
+def _obj_to_xml(parent, data):
+    if isinstance(data, dict):
+        for key, value in data.items():
+            child = ET.SubElement(parent, str(key))
+            _obj_to_xml(child, value)
+    elif isinstance(data, list):
+        for entry in data:
+            child = ET.SubElement(parent, "item")
+            _obj_to_xml(child, entry)
+    else:
+        parent.text = "" if data is None else str(data)
+
+
+def write_xml(data, path):
+    root = ET.Element(ROOT_TAG)
+    _obj_to_xml(root, data)
+    rough = ET.tostring(root, encoding="utf-8")
+    pretty = minidom.parseString(rough).toprettyxml(indent="    ", encoding="utf-8")
+    with open(path, "wb") as f:
+        f.write(pretty)
+
+
+WRITERS["xml"] = write_xml
 
 
 def detect_format(path):
