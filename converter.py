@@ -65,6 +65,18 @@ def read_yaml(path):
 READERS["yml"] = read_yaml
 READERS["yaml"] = read_yaml
 
+# Task5: zapis danych z obiektu do pliku w formacie .yml/.yaml
+def write_yaml(data, path):
+    if yaml is None:
+        raise RuntimeError("Brak biblioteki PyYAML. Zainstaluj: pip install pyyaml")
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(
+            data, f, allow_unicode=True, default_flow_style=False, sort_keys=False
+        )
+
+
+WRITERS["yml"] = write_yaml
+WRITERS["yaml"] = write_yaml
 
 
 
