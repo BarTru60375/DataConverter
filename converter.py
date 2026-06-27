@@ -78,6 +78,36 @@ def write_yaml(data, path):
 WRITERS["yml"] = write_yaml
 WRITERS["yaml"] = write_yaml
 
+# Task6: wczytywanie z pliku .xml i weryfikacja poprawnosci skladni
+def _xml_to_obj(elem):
+    children = list(elem)
+    if not children:
+        text = elem.text.strip() if elem.text else ""
+        return text
+    # elementy <item> traktujemy jako liste
+    if all(child.tag == "item" for child in children):
+        return [_xml_to_obj(child) for child in children]
+    result = {}
+    for child in children:
+        value = _xml_to_obj(child)
+        if child.tag in result:
+            if not isinstance(result[child.tag], list):
+                result[child.tag] = [result[child.tag]]
+            result[child.tag].append(value)
+        else:
+            result[child.tag] = value
+    return result
+
+
+def read_xml(path):
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as e:
+        raise ValueError("Niepoprawna skladnia XML w pliku '%s': %s" % (path, e))
+    return _xml_to_obj(tree.getroot())
+
+
+READERS["xml"] = read_xml
 
 
 
