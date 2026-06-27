@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Task8: wersja programu z interfejsem graficznym (PyQt5).
+Task9: wersja UI, w ktorej wczytywanie i zapis pliku odbywaja sie
+asynchronicznie (w osobnym watku QThread), dzieki czemu interfejs
+nie zawiesza sie podczas konwersji wiekszych plikow.
 
-UI pozwala wybrac plik zrodlowy i docelowy oraz wykonac konwersje.
 Logika konwersji jest wspoldzielona z wersja konsolowa (converter.py).
 """
 import sys
 
+from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
     QWidget,
@@ -22,19 +24,39 @@ from PyQt5.QtWidgets import (
 import converter
 
 
+class ConversionWorker(QThread):
+    """Watek wykonujacy konwersje w tle (asynchronicznie wzgledem UI)."""
+
+    finished_ok = pyqtSignal(str, str)   # (src_fmt, dst_fmt)
+    failed = pyqtSignal(str)             # komunikat bledu
+
+    def __init__(self, source, destination):
+        super().__init__()
+        self.source = source
+        self.destination = destination
+
+    def run(self):
+        try:
+            src_fmt, dst_fmt = converter.convert(self.source, self.destination)
+        except Exception as e:
+            self.failed.emit(str(e))
+            return
+        self.finished_ok.emit(src_fmt, dst_fmt)
+
+
 class ConverterWindow(QWidget):
     FILTER = "Obslugiwane (*.json *.yml *.yaml *.xml);;Wszystkie pliki (*)"
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Konwerter danych JSON / YAML / XML")
+        self.setWindowTitle("Konwerter danych JSON / YAML / XML (asynchroniczny)")
         self.resize(560, 180)
+        self.worker = None
         self._build_ui()
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
 
-        # Wiersz: plik zrodlowy
         src_row = QHBoxLayout()
         self.src_edit = QLineEdit()
         self.src_edit.setPlaceholderText("Plik zrodlowy...")
@@ -45,7 +67,6 @@ class ConverterWindow(QWidget):
         src_row.addWidget(src_btn)
         layout.addLayout(src_row)
 
-        # Wiersz: plik docelowy
         dst_row = QHBoxLayout()
         self.dst_edit = QLineEdit()
         self.dst_edit.setPlaceholderText("Plik docelowy (z rozszerzeniem .json/.yml/.xml)...")
@@ -56,7 +77,6 @@ class ConverterWindow(QWidget):
         dst_row.addWidget(dst_btn)
         layout.addLayout(dst_row)
 
-        # Przycisk konwersji + status
         self.convert_btn = QPushButton("Konwertuj")
         self.convert_btn.clicked.connect(self.run_conversion)
         layout.addWidget(self.convert_btn)
@@ -80,15 +100,24 @@ class ConverterWindow(QWidget):
         if not source or not destination:
             QMessageBox.warning(self, "Brak danych", "Podaj plik zrodlowy i docelowy.")
             return
-        self.status.setText("Konwertowanie...")
-        try:
-            src_fmt, dst_fmt = converter.convert(source, destination)
-        except Exception as e:
-            self.status.setText("Blad.")
-            QMessageBox.critical(self, "Blad konwersji", str(e))
-            return
+
+        # Blokujemy przycisk na czas pracy watku, aby uniknac podwojnego uruchomienia.
+        self.convert_btn.setEnabled(False)
+        self.status.setText("Konwertowanie (w tle)...")
+
+        self.worker = ConversionWorker(source, destination)
+        self.worker.finished_ok.connect(self.on_success)
+        self.worker.failed.connect(self.on_error)
+        self.worker.finished.connect(lambda: self.convert_btn.setEnabled(True))
+        self.worker.start()
+
+    def on_success(self, src_fmt, dst_fmt):
         self.status.setText("OK: %s -> %s" % (src_fmt, dst_fmt))
-        QMessageBox.information(self, "Sukces", "Zapisano plik:\n%s" % destination)
+        QMessageBox.information(self, "Sukces", "Zapisano plik:\n%s" % self.dst_edit.text())
+
+    def on_error(self, message):
+        self.status.setText("Blad.")
+        QMessageBox.critical(self, "Blad konwersji", message)
 
 
 def main():
