@@ -1,0 +1,44 @@
+name: Build EXE
+
+# Wyzwalacze workflow:
+on:
+  # a) automatycznie raz w tygodniu - w kazdy poniedzialek o 06:00 UTC
+  schedule:
+    - cron: "0 6 * * 1"
+  # b) automatycznie po pushu na galaz master
+  push:
+    branches:
+      - master
+  # c) recznie przez uzytkownika (przycisk "Run workflow" w zakladce Actions)
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Najnowszy dostepny serwer Windows
+    runs-on: windows-latest
+
+    # Domyslny shell dla wszystkich krokow: PowerShell
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Pobranie repozytorium
+        uses: actions/checkout@v4
+
+      - name: Konfiguracja Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalacja komponentow (installResources.ps1)
+        run: ./installResources.ps1
+
+      - name: Budowanie pliku .exe (PyInstaller, --onefile)
+        run: pyinstaller --onefile converter.py
+
+      - name: Wyslanie artefaktu (.exe) na repozytorium GitHub
+        uses: actions/upload-artifact@v3
+        with:
+          name: converter-exe
+          path: dist/converter.exe
