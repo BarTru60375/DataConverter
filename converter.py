@@ -32,6 +32,16 @@ READERS = {}
 WRITERS = {}
 
 
+# Task2: wczytywanie z pliku .json i weryfikacja poprawnosci skladni
+def read_json(path):
+    with open(path, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError("Niepoprawna skladnia JSON w pliku '%s': %s" % (path, e))
+
+
+READERS["json"] = read_json
 
 
 
