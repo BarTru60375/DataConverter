@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Srodowiska wirtualne
+.venv/
+venv/
+env/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Pliki tymczasowe / wynikowe konwersji
+*.tmp
+out.*
+
+# IDE
+.vscode/
+.idea/
